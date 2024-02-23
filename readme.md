@@ -2,6 +2,8 @@
 
 ```
 Resolução da aula dia 17/02/2024
+
+Adicionando git actions
 ```
 
 ## Requirements
