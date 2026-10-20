@@ -1,4 +1,3 @@
-
 output "vpc_id" {
   description = "The ID of the VPC"
   value       = module.vpc.vpc_id
@@ -11,7 +10,7 @@ output "security_group_id" {
 
 output "ec2_instance_ids" {
   description = "The IDs of the EC2 instances"
-  value       = module.ec2_instance.*.id
+  value       = module.ec2_instance[*].id
 }
 
 output "alb_arn" {

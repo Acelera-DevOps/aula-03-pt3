@@ -4,10 +4,10 @@ provider "aws" {
 
 terraform {
   backend "s3" {
-    bucket = "aula-03-eriktonon"
-    key    = "aula-03/terraform.tfstate"
-    region = "us-east-1"
-
+    bucket  = "aula-03-eriktonon"
+    key     = "aula-03/terraform.tfstate"
+    region  = "us-east-1"
+    encrypt = true
   }
 }
 
@@ -49,10 +49,10 @@ module "sg" {
       to_port     = 80
       protocol    = "tcp"
       description = "open http port"
-      cidr_blocks = "0.0.0.0/0" 
+      cidr_blocks = "0.0.0.0/0"
     },
-
   ]
+
   egress_with_cidr_blocks = [
     {
       from_port   = 0
@@ -75,8 +75,9 @@ data "aws_ami" "ubuntu_server" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
   }
+
   filter {
     name   = "virtualization-type"
     values = ["hvm"]
@@ -84,22 +85,25 @@ data "aws_ami" "ubuntu_server" {
 }
 
 module "ec2_instance" {
-  source                 = "git::https://github.com/terraform-aws-modules/terraform-aws-ec2-instance.git?ref=v5.6.0"
-  depends_on             = [module.sg]
-  ami                    = data.aws_ami.ubuntu_server.id
-  instance_type          = var.instance_type
-  count                  = 2
-  key_name               = var.key_name
-  monitoring             = true
+  source                      = "git::https://github.com/terraform-aws-modules/terraform-aws-ec2-instance.git?ref=v5.6.0"
+  depends_on                  = [module.sg]
+  ami                         = data.aws_ami.ubuntu_server.id
+  instance_type               = var.instance_type
+  count                       = 2
+  key_name                    = var.key_name
+  monitoring                  = true
   associate_public_ip_address = true
-  vpc_security_group_ids = [module.sg.security_group_id]
-  subnet_id              = module.vpc.public_subnets[0]
+  vpc_security_group_ids      = [module.sg.security_group_id]
+  subnet_id                   = module.vpc.public_subnets[0]
+
   root_block_device = [
     {
       volume_type = "gp3"
       volume_size = 10
+      encrypted   = true
     }
   ]
+
   user_data = <<-EOF
               #!/bin/bash
               sudo apt-get update -y
@@ -116,10 +120,9 @@ module "ec2_instance" {
   }
 }
 
-
 module "alb" {
-  source  = "git::https://github.com/terraform-aws-modules/terraform-aws-alb.git?ref=v6.0.0"
-  name    = "my-alb"
+  source             = "git::https://github.com/terraform-aws-modules/terraform-aws-alb.git?ref=v6.0.0"
+  name               = "my-alb"
   load_balancer_type = "application"
   vpc_id             = module.vpc.vpc_id
   subnets            = module.vpc.public_subnets
